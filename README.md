@@ -3,6 +3,11 @@
 </p>
 
 <p align="center">
+  <a href="https://ai-finance-tracker-neon.vercel.app"><img alt="Live demo" src="https://img.shields.io/badge/%F0%9F%9A%80%20Live%20demo-Open%20app-ff2d95?style=for-the-badge"></a>
+  <br/><a href="https://ai-finance-tracker-neon.vercel.app">ai-finance-tracker-neon.vercel.app</a>
+</p>
+
+<p align="center">
   <b>Moneytwin: an AI finance tracker that builds a digital twin of your money.</b><br/>
   Upload a bank statement, get auto-categorised spending, a next-month forecast, a what-if simulator and AI coaching.<br/>
   Everything stays in your browser.
