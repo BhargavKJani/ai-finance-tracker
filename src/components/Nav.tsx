@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { AccountButton } from "./AccountButton";
 
 export function Nav() {
   return (
@@ -13,6 +14,7 @@ export function Nav() {
           <Link href="/pricing" className="rounded-lg px-3 py-2 hover:text-white">
             Pricing
           </Link>
+          <AccountButton />
           <Link
             href="/dashboard"
             className="rounded-xl bg-white px-4 py-2 font-medium text-slate-950 shadow-[0_0_30px_-6px_rgba(34,211,238,0.7)] transition hover:bg-cyan-200"

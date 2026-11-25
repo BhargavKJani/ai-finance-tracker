@@ -9,6 +9,7 @@ import { CURRENCIES } from "@/lib/format";
 import { buildSnapshot } from "@/lib/insights";
 import { useFinance } from "@/hooks/useFinance";
 import { Logo } from "../Logo";
+import { AccountButton } from "../AccountButton";
 import { AddTransaction } from "./AddTransaction";
 import { CategoryDonut, MonthlyChart, TrendChart } from "./Charts";
 import { Insights } from "./Insights";
@@ -93,6 +94,7 @@ export function Dashboard() {
             )}
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <AccountButton />
             <select aria-label="Currency" className={`${field} py-1.5`} value={currency} onChange={(e) => f.updateSettings({ currency: e.target.value })}>
               {CURRENCIES.map((c) => (
                 <option key={c}>{c}</option>

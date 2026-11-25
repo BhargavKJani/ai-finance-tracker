@@ -1,4 +1,5 @@
 import { categorize } from "@/lib/ai.server";
+import { aiGate } from "@/lib/billing/gate";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -14,5 +15,6 @@ export async function POST(request: Request) {
   if (descriptions.length > 500) {
     return Response.json({ error: "Too many descriptions (max 500)" }, { status: 413 });
   }
-  return Response.json(await categorize(descriptions));
+  // Claude only for a signed-in user with an open AI session (free uses or a paid plan).
+  return Response.json(await categorize(descriptions, await aiGate(request, body)));
 }

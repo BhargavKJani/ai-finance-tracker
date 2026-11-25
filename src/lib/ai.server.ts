@@ -4,7 +4,8 @@ import { EXPENSE_CATEGORY_NAMES, normaliseCategory } from "./categories";
 import { mockCategorize, mockInsights, type FinanceSnapshot } from "./insights";
 import type { AiMode, Insight } from "./types";
 
-export const MODEL = "claude-sonnet-5-5";
+// Haiku 5.5 keeps a statement's AI cost well under ₹1, which makes the ₹9 / ₹49 plans profitable.
+export const MODEL = "claude-haiku-5-5";
 
 export function hasApiKey(): boolean {
   const k = process.env.ANTHROPIC_API_KEY;
@@ -20,10 +21,11 @@ function firstText(msg: Anthropic.Message): string {
   return "";
 }
 
-export async function categorize(descriptions: string[]): Promise<{ mode: AiMode; categories: Record<string, string> }> {
+/** `allowAi` is decided by the route from the caller's plan; without it the demo engine answers. */
+export async function categorize(descriptions: string[], allowAi = hasApiKey()): Promise<{ mode: AiMode; categories: Record<string, string> }> {
   const unique = [...new Set(descriptions.map((d) => d.trim()).filter(Boolean))].slice(0, 200);
-  if (!unique.length) return { mode: hasApiKey() ? "claude" : "demo", categories: {} };
-  if (!hasApiKey()) return { mode: "demo", categories: mockCategorize(unique) };
+  if (!unique.length) return { mode: allowAi ? "claude" : "demo", categories: {} };
+  if (!allowAi) return { mode: "demo", categories: mockCategorize(unique) };
 
   try {
     const msg = await client().messages.create({
@@ -79,8 +81,8 @@ export async function categorize(descriptions: string[]): Promise<{ mode: AiMode
   }
 }
 
-export async function insights(snapshot: FinanceSnapshot): Promise<{ mode: AiMode; insights: Insight[] }> {
-  if (!hasApiKey()) return { mode: "demo", insights: mockInsights(snapshot) };
+export async function insights(snapshot: FinanceSnapshot, allowAi = hasApiKey()): Promise<{ mode: AiMode; insights: Insight[] }> {
+  if (!allowAi) return { mode: "demo", insights: mockInsights(snapshot) };
   try {
     const msg = await client().messages.create({
       model: MODEL,

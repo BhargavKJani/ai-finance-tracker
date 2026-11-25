@@ -1,4 +1,5 @@
 import { insights } from "@/lib/ai.server";
+import { aiGate } from "@/lib/billing/gate";
 import type { FinanceSnapshot } from "@/lib/insights";
 
 export async function POST(request: Request) {
@@ -11,5 +12,5 @@ export async function POST(request: Request) {
   if (!snapshot || typeof snapshot.latestMonth !== "string" || !Array.isArray(snapshot.topCategories)) {
     return Response.json({ error: "Invalid snapshot" }, { status: 400 });
   }
-  return Response.json(await insights(snapshot));
+  return Response.json(await insights(snapshot, await aiGate(request, snapshot)));
 }

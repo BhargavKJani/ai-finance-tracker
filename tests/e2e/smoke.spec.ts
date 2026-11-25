@@ -24,5 +24,5 @@ test("premium CTA shows the beta notice", async ({ page }) => {
 
 test("API status reports demo mode without a key", async ({ request }) => {
   const res = await request.get("/api/status");
-  expect(await res.json()).toMatchObject({ mode: "demo", model: "claude-sonnet-5-5" });
+  expect(await res.json()).toMatchObject({ mode: "demo", model: "claude-haiku-5-5" });
 });

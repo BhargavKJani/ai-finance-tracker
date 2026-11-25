@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseStatement } from "@/lib/csv";
-import { importTransactions, makeId, txnKey } from "@/lib/pipeline";
+import { importTransactions, makeId, sessionCategorizer, txnKey } from "@/lib/pipeline";
+import { useAccount } from "@/components/AccountProvider";
+import { startAiUse } from "@/lib/billing/client";
+import { setAiSession } from "@/lib/billing/session-store";
 import { clearAll, DEFAULT_SETTINGS, loadSettings, loadTransactions, saveSettings, saveTransactions, type Settings } from "@/lib/storage";
 import type { AiMode, NewTransaction, Transaction } from "@/lib/types";
 
@@ -22,6 +25,12 @@ export function useFinance() {
   const [aiMode, setAiMode] = useState<AiMode | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const txRef = useRef<Transaction[]>([]);
+  const acc = useAccount();
+  // Read the account through a ref so account refreshes don't re-create the callbacks below.
+  const accRef = useRef(acc);
+  useEffect(() => {
+    accRef.current = acc;
+  }, [acc]);
 
   const notify = useCallback((text: string, tone: Toast["tone"] = "info") => {
     setToast({ id: Date.now(), text, tone });
@@ -41,8 +50,14 @@ export function useFinance() {
   }, []);
 
   const ingest = useCallback(
-    async (rows: NewTransaction[], label: string) => {
-      const result = await importTransactions(rows, txRef.current);
+    async (rows: NewTransaction[], label: string, useAi = true) => {
+      // Each upload of the user's own statements uses one AI statement from their plan (sample data never does);
+      // without one, rules and the demo AI categorise.
+      const a = accRef.current;
+      const { sessionId, notice } = useAi ? await startAiUse(a) : { sessionId: null, notice: null };
+      setAiSession(sessionId);
+      if (notice) notify(notice, "info");
+      const result = await importTransactions(rows, txRef.current, sessionCategorizer(sessionId, sessionId ? await a.token() : ""));
       if (result.mode) setAiMode(result.mode);
       commit([...txRef.current, ...result.added]);
       const parts = [`Imported ${result.added.length} transactions from ${label}`];
@@ -62,7 +77,7 @@ export function useFinance() {
         const text = await fetch(`/samples/${f}`).then((r) => r.text());
         rows.push(...parseStatement(text, f).transactions);
       }
-      await ingest(rows, "sample data");
+      await ingest(rows, "sample data", false);
     } catch {
       notify("Could not load sample data.", "error");
     } finally {

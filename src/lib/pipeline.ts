@@ -24,11 +24,16 @@ export function applyRules(rows: NewTransaction[]): { rows: NewTransaction[]; un
 
 export type Categorizer = (descriptions: string[]) => Promise<{ mode: AiMode; categories: Record<string, string> }>;
 
-export const remoteCategorizer: Categorizer = async (descriptions) => {
+export const remoteCategorizer: Categorizer = (descriptions) => sessionCategorizer(null, "")(descriptions);
+
+/** Categoriser that carries an AI session and sign-in token, so the server may use Claude. */
+export const sessionCategorizer = (session: string | null, token: string): Categorizer => async (descriptions) => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (session && token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch("/api/categorize", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ descriptions }),
+    headers,
+    body: JSON.stringify(session ? { descriptions, session } : { descriptions }),
   });
   if (!res.ok) throw new Error(`categorize failed: ${res.status}`);
   return res.json();

@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FinanceSnapshot } from "@/lib/insights";
 import type { AiMode, Insight, InsightKind } from "@/lib/types";
 import { Badge, btn, Panel } from "./primitives";
+import { useAccount } from "../AccountProvider";
+import { getAiSession } from "@/lib/billing/session-store";
 
 const KIND: Record<InsightKind, { icon: typeof Info; ring: string; text: string }> = {
   warning: { icon: AlertTriangle, ring: "from-amber-400/25", text: "text-amber-300" },
@@ -20,12 +22,17 @@ export function Insights({ snapshot }: { snapshot: FinanceSnapshot }) {
   const [loading, setLoading] = useState(false);
   const key = JSON.stringify(snapshot);
   const reqId = useRef(0);
+  const acc = useAccount();
 
   const load = useCallback(async (body: string) => {
     const id = ++reqId.current;
     setLoading(true);
     try {
-      const res = await fetch("/api/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body });
+      // Insights reuse the AI session of the latest import, if it has calls left.
+      const session = getAiSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session) headers.Authorization = `Bearer ${await acc.token()}`;
+      const res = await fetch("/api/insights", { method: "POST", headers, body: session ? JSON.stringify({ ...JSON.parse(body), session }) : body });
       const json = (await res.json()) as { mode: AiMode; insights: Insight[] };
       if (id !== reqId.current) return;
       setItems(json.insights);
@@ -35,7 +42,7 @@ export function Insights({ snapshot }: { snapshot: FinanceSnapshot }) {
     } finally {
       if (id === reqId.current) setLoading(false);
     }
-  }, []);
+  }, [acc]);
 
   useEffect(() => {
     const t = setTimeout(() => void load(key), 350);
@@ -53,7 +60,7 @@ export function Insights({ snapshot }: { snapshot: FinanceSnapshot }) {
       subtitle="Generated from aggregated totals only, never raw transactions."
       action={
         <div className="flex items-center gap-2">
-          {mode && <Badge tone={mode === "claude" ? "violet" : "amber"}>{mode === "claude" ? "Claude Sonnet" : "Demo mode"}</Badge>}
+          {mode && <Badge tone={mode === "claude" ? "violet" : "amber"}>{mode === "claude" ? "Claude AI" : "Demo mode"}</Badge>}
           <button className={btn} onClick={() => void load(key)} disabled={loading} aria-label="Refresh insights">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
